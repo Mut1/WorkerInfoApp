@@ -7,7 +7,7 @@ public class RetrofitManager {
 
 
     private static Retrofit retrofit = new Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:9102")
+            .baseUrl("http://192.168.31.173:8080/inoutrecord/")
             .addConverterFactory(GsonConverterFactory.create())
             .build();
 

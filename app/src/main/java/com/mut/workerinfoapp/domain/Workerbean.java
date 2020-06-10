@@ -2,7 +2,16 @@ package com.mut.workerinfoapp.domain;
 
 import java.util.List;
 
-public class workerbean {
+public class Workerbean {
+
+    @Override
+    public String toString() {
+        return "Workerbean{" +
+                "code=" + code +
+                ", message='" + message + '\'' +
+                ", data=" + data +
+                '}';
+    }
 
     /**
      * code : 200
