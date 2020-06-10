@@ -18,39 +18,41 @@
     <LinearLayout
         android:orientation="horizontal"
         android:id="@+id/ll_time"
-        android:background="#fff"
         android:layout_marginTop="80dp"
         android:layout_width="600dp"
+
         android:layout_height="100dp">
-<TextView
-    android:text="15：34：55"
-    android:layout_gravity="center_vertical"
-    android:textSize="55sp"
-    android:layout_width="0dp"
-    android:layout_weight="2"
-    android:layout_height="wrap_content"
-    android:gravity="center"
-    />
+
+        <TextClock
+            android:format12Hour="hh:mm:ss"
+            android:layout_gravity="center_vertical"
+            android:textSize="55sp"
+            android:layout_width="0dp"
+            android:textColor="#fff"
+            android:layout_weight="2"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            />
         <LinearLayout
+            android:layout_marginTop="20dp"
             android:id="@+id/ll_weekdate"
             android:layout_width="0dp"
             android:layout_weight="1"
             android:orientation="vertical"
             android:layout_height="wrap_content">
-            <TextView
-                android:text="星期三"
+            <TextClock
                 android:textSize="25sp"
-
+                android:format12Hour="EEEE"
+                android:textColor="#fff"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
-
-            <TextView
-                android:text="2020年12月10日"
+                android:layout_height="wrap_content"/>
+            <TextClock
+                android:textColor="#fff"
+                android:format12Hour="yyyy年MM月dd日"
                 android:textSize="25sp"
-
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"/>
-
         </LinearLayout>
     </LinearLayout>
     <LinearLayout
@@ -87,7 +89,14 @@
           android:layout_marginBottom="70dp"
           android:background="@drawable/background_right1"
           android:layout_marginLeft="30dp">
-
+<androidx.recyclerview.widget.RecyclerView
+    android:layout_marginTop="20dp"
+    android:layout_marginLeft="30dp"
+    android:layout_marginBottom="30dp"
+    android:id="@+id/rv_right"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    />
       </LinearLayout>
 
   </LinearLayout>

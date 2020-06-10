@@ -47,4 +47,7 @@ dependencies {
 
 
     implementation 'com.github.0xZhangKe:WebSocketDemo:3.1'
+
+    // if u use AndroidX, use the following
+    implementation 'com.blankj:utilcodex:1.29.0'
 }
