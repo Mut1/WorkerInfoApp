@@ -1,17 +1,29 @@
 package com.mut.workerinfoapp;
 
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.blankj.utilcode.util.NetworkUtils;
 import com.mut.workerinfoapp.Base.BaseActivity;
 import com.mut.workerinfoapp.Utils.RetrofitManager;
+import com.mut.workerinfoapp.adpater.ClassCountAdapter;
 import com.mut.workerinfoapp.adpater.Rightadpter;
 import com.mut.workerinfoapp.domain.CountBean;
 import com.mut.workerinfoapp.domain.Workerbean;
 
 import java.net.HttpURLConnection;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,8 +42,7 @@ import retrofit2.Retrofit;
 public class MainActivity extends BaseActivity {
 
     private RecyclerView rv_right;
-    Rightadpter mAdpter;
-    Workerbean bean;
+    Rightadpter mRight_Adpter;
     private ImageView mImgCond;
     private TextView mTvCond;
     private TextView mTvTmp;
@@ -40,29 +51,31 @@ public class MainActivity extends BaseActivity {
     private TextView mTvTotal;
     private TextView mTvIn;
     private TextView mTvOut;
+    private RecyclerView mRvClasscount;
+    ClassCountAdapter mClassCountAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_mian);
+        initView_class_count();
         initView_count();
         initView_weather();
-        initView_right_rv();
+        initView_workerInOut_rv();
         getworkrinout();
 
+        Log.e(TAG, NetworkUtils.getIPAddress(true));
+        Log.e(TAG, NetworkUtils.getGatewayByWifi());
+        Log.e(TAG, NetworkUtils.getGatewayByWifi());
+        Log.e(TAG, NetworkUtils.getServerAddressByWifi());
 
     }
 
-    public void initView_right_rv() {
+    public void initView_workerInOut_rv() {
         rv_right = (RecyclerView) findViewById(R.id.rv_right);
         rv_right.setLayoutManager(new LinearLayoutManager(this));
-        mAdpter = new Rightadpter();
-        rv_right.setAdapter(mAdpter);
-
-    }
-
-    public void updateRightrv(Workerbean workerbean) {
-        mAdpter.setdata(workerbean);
+        mRight_Adpter = new Rightadpter();
+        rv_right.setAdapter(mRight_Adpter);
     }
 
     public void getworkrinout() {
@@ -73,7 +86,7 @@ public class MainActivity extends BaseActivity {
         task.enqueue(new Callback<Workerbean>() {
             @Override
             public void onResponse(Call<Workerbean> call, Response<Workerbean> response) {
-                updateRightrv(response.body());
+                updateWorkerInOut(response.body());
             }
 
             @Override
@@ -81,7 +94,10 @@ public class MainActivity extends BaseActivity {
 
             }
         });
+    }
 
+    public void updateWorkerInOut(Workerbean workerbean) {
+        mRight_Adpter.setdata(workerbean);
     }
 
     private void initView_weather() {
@@ -90,9 +106,15 @@ public class MainActivity extends BaseActivity {
         mTvTmp = (TextView) findViewById(R.id.tv_tmp);
         mTvWindDir = (TextView) findViewById(R.id.tv_wind_dir);
         mWindSc = (TextView) findViewById(R.id.wind_sc);
-        HeWeather.getWeatherNow(MainActivity.this, "shanghai", Lang.CHINESE_SIMPLIFIED, Unit.METRIC, new HeWeather.OnResultWeatherNowBeanListener() {
+        getWeather();
+
+    }
+
+    public void getWeather() {
+        HeWeather.getWeatherNow(MainActivity.this, "CN101010100", Lang.CHINESE_SIMPLIFIED, Unit.METRIC, new HeWeather.OnResultWeatherNowBeanListener() {
             @Override
             public void onError(Throwable throwable) {
+                Log.d(TAG, "weather  error: " + throwable.toString());
 
             }
 
@@ -100,7 +122,8 @@ public class MainActivity extends BaseActivity {
             public void onSuccess(Now now) {
                 if (Code.OK.getCode().equalsIgnoreCase(now.getStatus())) {
                     //此时返回数据
-                    updateWeather(now);
+                    Log.d(TAG, "天气返回chengg");
+                    updateWeatherView(now);
 
                 } else {
                     //在此查看返回数据失败的原因
@@ -112,7 +135,7 @@ public class MainActivity extends BaseActivity {
         });
     }
 
-    private void updateWeather(Now now) {
+    private void updateWeatherView(Now now) {
         NowBase now1 = now.getNow();
         Basic basic = now.getBasic();
         String s = "a" + now1.getCond_code();
@@ -143,11 +166,13 @@ public class MainActivity extends BaseActivity {
 
     }
 
+
+    //count view
     private void initView_count() {
         mTvTotal = (TextView) findViewById(R.id.tv_total);
         mTvIn = (TextView) findViewById(R.id.tv_in);
         mTvOut = (TextView) findViewById(R.id.tv_out);
-       getcount();
+        getcount();
     }
 
     private void getcount() {
@@ -157,12 +182,12 @@ public class MainActivity extends BaseActivity {
         task.enqueue(new Callback<CountBean>() {
             @Override
             public void onResponse(Call<CountBean> call, Response<CountBean> response) {
-               updateCountView(response.body());
+                updateCountView(response.body());
             }
 
             @Override
             public void onFailure(Call<CountBean> call, Throwable t) {
-             Log.d(TAG,"ERROR CODE -----> "+t.toString());
+                Log.d(TAG, "ERROR CODE -----> " + t.toString());
             }
         });
 
@@ -177,7 +202,7 @@ public class MainActivity extends BaseActivity {
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
-                        if (body.getCode()== HttpURLConnection.HTTP_OK) {
+                        if (body.getCode() == HttpURLConnection.HTTP_OK) {
                             mTvTotal.setText(body.getData().getTotal());
                             mTvIn.setText(body.getData().getIn());
                             mTvOut.setText(body.getData().getOut());
@@ -191,6 +216,15 @@ public class MainActivity extends BaseActivity {
         thread.start();
 
     }
+
+
+    private void initView_class_count() {
+        mRvClasscount = (RecyclerView) findViewById(R.id.rv_classcount);
+        mRvClasscount.setLayoutManager(new LinearLayoutManager(this));
+        mClassCountAdapter=new ClassCountAdapter();
+        mRvClasscount.setAdapter(mClassCountAdapter);
+    }
+
 
 
 }
