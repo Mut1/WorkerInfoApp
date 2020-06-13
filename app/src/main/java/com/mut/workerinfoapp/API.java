@@ -1,5 +1,6 @@
 package com.mut.workerinfoapp;
 
+import com.mut.workerinfoapp.domain.ClassCount;
 import com.mut.workerinfoapp.domain.CountBean;
 import com.mut.workerinfoapp.domain.Workerbean;
 
@@ -12,4 +13,7 @@ public interface API  {
 
     @GET("count")
     Call<CountBean> getCount();
+
+    @GET("classcount")
+    Call<ClassCount> getClassCount();
 }

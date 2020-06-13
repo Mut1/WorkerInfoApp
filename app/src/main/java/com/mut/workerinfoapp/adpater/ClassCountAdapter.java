@@ -6,11 +6,17 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.mut.workerinfoapp.R;
+import com.mut.workerinfoapp.domain.ClassCount;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class ClassCountAdapter extends RecyclerView.Adapter<ClassCountAdapter.InnerHolder> {
+    private List<ClassCount.DataBean> mdata=new ArrayList<>();
+
     @NonNull
     @Override
     public InnerHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
@@ -21,13 +27,22 @@ public class ClassCountAdapter extends RecyclerView.Adapter<ClassCountAdapter.In
     @Override
     public void onBindViewHolder(@NonNull InnerHolder holder, int position) {
         ViewHolder viewHolder = new ViewHolder(holder.itemView);
-
+        ClassCount.DataBean dataBean = mdata.get(position);
+        viewHolder.mTvClass.setText(dataBean.getType());
+        viewHolder.mTvClassCount.setText(dataBean.getTotal());
 
     }
 
     @Override
     public int getItemCount() {
-        return 13;
+        return mdata.size();
+    }
+
+    public void setData(ClassCount data) {
+
+        mdata.clear();
+        mdata.addAll(data.getData());
+        notifyDataSetChanged();
     }
 
 

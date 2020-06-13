@@ -9,7 +9,7 @@ public class RetrofitManager {
 
 
     private static Retrofit retrofit = new Retrofit.Builder()
-           // .baseUrl("http://172.20.10.5:8080/inoutrecord/")
+            //.baseUrl("http://172.20.10.7:8080/inoutrecord/")
             .baseUrl("http://"+ NetworkUtils.getServerAddressByWifi()+":8080/inoutrecord/")
 
             .addConverterFactory(GsonConverterFactory.create())

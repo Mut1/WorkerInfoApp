@@ -6,23 +6,34 @@ import android.net.NetworkInfo;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.blankj.utilcode.util.NetworkUtils;
 import com.mut.workerinfoapp.Base.BaseActivity;
+import com.mut.workerinfoapp.Base.Myapp;
+import com.mut.workerinfoapp.Utils.PollingManger;
 import com.mut.workerinfoapp.Utils.RetrofitManager;
 import com.mut.workerinfoapp.adpater.ClassCountAdapter;
 import com.mut.workerinfoapp.adpater.Rightadpter;
+import com.mut.workerinfoapp.domain.ClassCount;
 import com.mut.workerinfoapp.domain.CountBean;
 import com.mut.workerinfoapp.domain.Workerbean;
+import com.zhangke.websocket.SimpleListener;
+import com.zhangke.websocket.SocketListener;
+import com.zhangke.websocket.WebSocketHandler;
+import com.zhangke.websocket.WebSocketManager;
+import com.zhangke.websocket.response.ErrorResponse;
 
 import java.net.HttpURLConnection;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.util.Enumeration;
 
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -53,6 +64,46 @@ public class MainActivity extends BaseActivity {
     private TextView mTvOut;
     private RecyclerView mRvClasscount;
     ClassCountAdapter mClassCountAdapter;
+    private Handler mHandler_workinfo = new Handler();
+    private Handler mHandler_weather = new Handler();
+    private SocketListener socketListener = new SimpleListener() {
+        @Override
+        public void onConnected() {
+            Log.d(TAG,"web socket onConnected");
+        }
+
+        @Override
+        public void onConnectFailed(Throwable e) {
+            if (e != null) {
+                Log.d(TAG,"web socket onConnectFailed:" + e.toString());
+            } else {
+                Log.d(TAG,"web socket onConnectFailed:null");
+            }
+        }
+
+        @Override
+        public void onDisconnect() {
+            Log.d(TAG,"web socket  onDisconnect");
+        }
+
+        @Override
+        public void onSendDataError(ErrorResponse errorResponse) {
+            Log.d(TAG,"web socket onSendDataError:" + errorResponse.toString());
+            errorResponse.release();
+        }
+
+        @Override
+        public <T> void onMessage(String message, T data) {
+            Log.d(TAG ,  "web socket onMessage(String, T):" + message);
+            getworkerinfo();
+        }
+
+        @Override
+        public <T> void onMessage(ByteBuffer bytes, T data) {
+            Log.d(TAG,"web socket onMessage(ByteBuffer, T):" + bytes);
+        }
+    };
+    private WebSocketManager mWebSocketManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -62,12 +113,17 @@ public class MainActivity extends BaseActivity {
         initView_count();
         initView_weather();
         initView_workerInOut_rv();
-        getworkrinout();
-
+        getWeather();
+        getworkerinfo();
+        Start_Lopper_weather();
         Log.e(TAG, NetworkUtils.getIPAddress(true));
         Log.e(TAG, NetworkUtils.getGatewayByWifi());
         Log.e(TAG, NetworkUtils.getGatewayByWifi());
         Log.e(TAG, NetworkUtils.getServerAddressByWifi());
+        Start_Lopper_workinfo();
+
+       // start();
+        mWebSocketManager = WebSocketHandler.getDefault().addListener(socketListener);
 
     }
 
@@ -86,7 +142,11 @@ public class MainActivity extends BaseActivity {
         task.enqueue(new Callback<Workerbean>() {
             @Override
             public void onResponse(Call<Workerbean> call, Response<Workerbean> response) {
-                updateWorkerInOut(response.body());
+                if (response.body() != null) {
+                    updateWorkerInOut(response.body());
+
+                }
+              //  Log.d(TAG,"最后一名人员--->"+response.body().getData().get(response.body().getData().size()-1).getPersonname());
             }
 
             @Override
@@ -106,12 +166,11 @@ public class MainActivity extends BaseActivity {
         mTvTmp = (TextView) findViewById(R.id.tv_tmp);
         mTvWindDir = (TextView) findViewById(R.id.tv_wind_dir);
         mWindSc = (TextView) findViewById(R.id.wind_sc);
-        getWeather();
 
     }
 
     public void getWeather() {
-        HeWeather.getWeatherNow(MainActivity.this, "CN101010100", Lang.CHINESE_SIMPLIFIED, Unit.METRIC, new HeWeather.OnResultWeatherNowBeanListener() {
+        HeWeather.getWeatherNow(MainActivity.this, "zhenjiang", Lang.CHINESE_SIMPLIFIED, Unit.METRIC, new HeWeather.OnResultWeatherNowBeanListener() {
             @Override
             public void onError(Throwable throwable) {
                 Log.d(TAG, "weather  error: " + throwable.toString());
@@ -172,7 +231,6 @@ public class MainActivity extends BaseActivity {
         mTvTotal = (TextView) findViewById(R.id.tv_total);
         mTvIn = (TextView) findViewById(R.id.tv_in);
         mTvOut = (TextView) findViewById(R.id.tv_out);
-        getcount();
     }
 
     private void getcount() {
@@ -217,6 +275,30 @@ public class MainActivity extends BaseActivity {
 
     }
 
+private void getClassCount()
+{
+    Retrofit retrofit = RetrofitManager.getRetrofit();
+    API api = retrofit.create(API.class);
+    Call<ClassCount> task = api.getClassCount();
+    task.enqueue(new Callback<ClassCount>() {
+        @Override
+        public void onResponse(Call<ClassCount> call, Response<ClassCount> response) {
+            updateClassCountView(response.body());
+        }
+
+        @Override
+        public void onFailure(Call<ClassCount> call, Throwable t) {
+            Log.d(TAG, "ERROR CODE -----> " + t.toString());
+        }
+    });
+}
+
+    private void updateClassCountView(ClassCount body) {
+        if (body.getCode() ==HttpURLConnection.HTTP_OK) {
+            mClassCountAdapter.setData(body);
+
+        }
+    }
 
     private void initView_class_count() {
         mRvClasscount = (RecyclerView) findViewById(R.id.rv_classcount);
@@ -227,4 +309,68 @@ public class MainActivity extends BaseActivity {
 
 
 
+    public void Start_Lopper_workinfo() {
+        // 先清除原来的，防止出现多次开始
+        mHandler_workinfo.removeCallbacksAndMessages(null);
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                // 在这里做轮询的事情
+                // doSomeThing();
+                Log.d("111","lunxun");
+             //  getworkerinfo();
+                if (mWebSocketManager.isConnect()) {
+
+                }
+                else
+                    mWebSocketManager.reconnect();
+                // 60秒后下一次轮询开始
+                mHandler_workinfo.postDelayed(this, 1 * 1000);
+            }
+        };
+        mHandler_workinfo.postDelayed(runnable, 1 * 1000);
+    }
+
+    public void Stop__Lopper_workinfo() {
+        mHandler_workinfo.removeCallbacksAndMessages(null);
+    }
+
+
+    public void Start_Lopper_weather() {
+        // 先清除原来的，防止出现多次开始
+        mHandler_weather.removeCallbacksAndMessages(null);
+        Runnable runnable = new Runnable() {
+            @Override
+            public void run() {
+                // 在这里做轮询的事情
+                // doSomeThing();
+                Log.d("111","lunxun");
+                // 60秒后下一次轮询开始
+                getWeather();
+                mHandler_weather.postDelayed(this, 60*60 * 1000);
+            }
+        };
+        mHandler_weather.postDelayed(runnable, 1 * 1000);
+    }
+
+    public void Stop__Lopper_weather() {
+        mHandler_weather.removeCallbacksAndMessages(null);
+    }
+
+    @Override
+    protected void onDestroy() {
+     Stop__Lopper_weather();
+     Stop__Lopper_workinfo();
+     mWebSocketManager.removeListener(socketListener);
+     super.onDestroy();
+    }
+
+    public void getworkerinfo()
+    {
+
+        getworkrinout();
+
+        getcount();
+        getClassCount();
+    }
 }
