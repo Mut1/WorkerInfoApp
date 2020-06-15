@@ -13,6 +13,7 @@ import com.mut.workerinfoapp.R;
 import com.mut.workerinfoapp.Utils.Base2pic;
 import com.mut.workerinfoapp.domain.Workerbean;
 
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -22,6 +23,8 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 public class Rightadpter extends RecyclerView.Adapter<Rightadpter.InnerHolder> {
+    private static final String TAG ="Rightadpter" ;
+
     private List<Workerbean.DataBean> data = new ArrayList<>();
     private List<Workerbean.DataBean> removedErrorList = new ArrayList<>();
 
@@ -55,42 +58,48 @@ public class Rightadpter extends RecyclerView.Adapter<Rightadpter.InnerHolder> {
 
     public void setdata(Workerbean workerbean) {
         data.clear();
-        if (workerbean.getCode()==200) {
-            Collections.reverse(workerbean.getData());
-            for (int i = 0; i < workerbean.getData().size(); i++) {
-                Workerbean.DataBean currentbean = workerbean.getData().get(i);
-                Log.d("1111", "data:"+currentbean.getPersonname());
-                if (removedErrorList.size()==0) {
-                    removedErrorList.add(currentbean);
-                }
-                else
-                {
-                    String currentbeanPersonidcardcode = currentbean.getPersonidcardcode();
-                    String personidcardcode = removedErrorList.get(removedErrorList.size()-1).getPersonidcardcode();
-                    String currentbeanCommtype = currentbean.getCommtype();
-                    String commtype = removedErrorList.get(removedErrorList.size()-1).getCommtype();
-                    if (currentbeanPersonidcardcode.equals(personidcardcode))
-                    {
-                        if (currentbeanCommtype.equals(commtype))
-                        {
-
-                        }
-                        else
-                        {
-                            removedErrorList.add(currentbean);
-                        }
-                    }
-                    else
-                    {
-                        removedErrorList.add(currentbean);
-                    }
-                }
-            }
-
-            data.addAll(removedErrorList);
-
+        removedErrorList.clear();
+//        if (workerbean.getCode()==200) {
+//            Collections.reverse(workerbean.getData());
+//            for (int i = 0; i < workerbean.getData().size(); i++) {
+//                Workerbean.DataBean currentbean = workerbean.getData().get(i);
+//                Log.d(TAG, "workin&out size ---> :"+ workerbean.getData().size());
+//                if (removedErrorList.size()==0) {
+//                    removedErrorList.add(currentbean);
+//                }
+//                else
+//                {
+//
+//                    String currentbeanPersonidcardcode = currentbean.getPersonidcardcode();
+//                    String personidcardcode = removedErrorList.get(removedErrorList.size()-1).getPersonidcardcode();
+//                    String currentbeanCommtype = currentbean.getCommtype();
+//                    String commtype = removedErrorList.get(removedErrorList.size()-1).getCommtype();
+//                    if (currentbeanPersonidcardcode.equals(personidcardcode))
+//                    {
+//                        if (currentbeanCommtype.equals(commtype))
+//                        {
+//
+//                        }
+//                        else
+//                        {
+//                            removedErrorList.add(currentbean);
+//                        }
+//                    }
+//                    else
+//                    {
+//                        removedErrorList.add(currentbean);
+//                    }
+//                }
+//            }
+//
+//            data.addAll(removedErrorList);
+//
+//        }
+        if (workerbean.getCode()== HttpURLConnection.HTTP_OK) {
+            Log.d(TAG, "workin&out size ---> :"+ workerbean.getData().size());
+            data.addAll(workerbean.getData());
         }
-      //  Collections.reverse(data);
+        Collections.reverse(data);
         notifyDataSetChanged();
 
     }

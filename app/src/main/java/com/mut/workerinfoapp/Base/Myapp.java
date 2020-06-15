@@ -22,7 +22,7 @@ public class Myapp extends Application {
 
 
         setting = new WebSocketSetting();
-        setting.setConnectUrl("ws://172.20.10.7:8080/websocket");
+        setting.setConnectUrl("ws://192.168.1.102:8080/websocket");
         //设置连接超时时间
         setting.setConnectTimeout(10 * 1000);
 

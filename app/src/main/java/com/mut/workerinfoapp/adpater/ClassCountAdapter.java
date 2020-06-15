@@ -38,7 +38,7 @@ public class ClassCountAdapter extends RecyclerView.Adapter<ClassCountAdapter.In
         return mdata.size();
     }
 
-    public void setData(ClassCount data) {
+    public void setData(@lombok.NonNull  ClassCount data) {
 
         mdata.clear();
         mdata.addAll(data.getData());

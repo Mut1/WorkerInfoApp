@@ -45,6 +45,7 @@ import interfaces.heweather.com.interfacesmodule.bean.basic.Basic;
 import interfaces.heweather.com.interfacesmodule.bean.weather.now.Now;
 import interfaces.heweather.com.interfacesmodule.bean.weather.now.NowBase;
 import interfaces.heweather.com.interfacesmodule.view.HeWeather;
+import lombok.NonNull;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -52,6 +53,9 @@ import retrofit2.Retrofit;
 
 public class MainActivity extends BaseActivity {
 
+    private static final String TAG1 ="web socket";
+    private static final String TAG_WEATHER = "weather" ;
+    private static final String TAG_WORKINFO ="workinfo" ;
     private RecyclerView rv_right;
     Rightadpter mRight_Adpter;
     private ImageView mImgCond;
@@ -69,38 +73,38 @@ public class MainActivity extends BaseActivity {
     private SocketListener socketListener = new SimpleListener() {
         @Override
         public void onConnected() {
-            Log.d(TAG,"web socket onConnected");
+            Log.d(TAG1,"web socket onConnected");
         }
 
         @Override
         public void onConnectFailed(Throwable e) {
             if (e != null) {
-                Log.d(TAG,"web socket onConnectFailed:" + e.toString());
+                Log.d(TAG1,"web socket onConnectFailed:" + e.toString());
             } else {
-                Log.d(TAG,"web socket onConnectFailed:null");
+                Log.d(TAG1,"web socket onConnectFailed:null");
             }
         }
 
         @Override
         public void onDisconnect() {
-            Log.d(TAG,"web socket  onDisconnect");
+            Log.d(TAG1,"web socket  onDisconnect");
         }
 
         @Override
         public void onSendDataError(ErrorResponse errorResponse) {
-            Log.d(TAG,"web socket onSendDataError:" + errorResponse.toString());
+            Log.d(TAG1,"web socket onSendDataError:" + errorResponse.toString());
             errorResponse.release();
         }
 
         @Override
         public <T> void onMessage(String message, T data) {
-            Log.d(TAG ,  "web socket onMessage(String, T):" + message);
+            Log.d(TAG1 ,  "web socket onMessage(String, T):" + message);
             getworkerinfo();
         }
 
         @Override
         public <T> void onMessage(ByteBuffer bytes, T data) {
-            Log.d(TAG,"web socket onMessage(ByteBuffer, T):" + bytes);
+            Log.d(TAG1,"web socket onMessage(ByteBuffer, T):" + bytes);
         }
     };
     private WebSocketManager mWebSocketManager;
@@ -120,6 +124,11 @@ public class MainActivity extends BaseActivity {
         Log.e(TAG, NetworkUtils.getGatewayByWifi());
         Log.e(TAG, NetworkUtils.getGatewayByWifi());
         Log.e(TAG, NetworkUtils.getServerAddressByWifi());
+        Log.e(TAG,NetworkUtils.getBroadcastIpAddress());
+        Log.e(TAG,NetworkUtils.getWifiEnabled()+"");
+        Log.e(TAG,NetworkUtils.getIpAddressByWifi());
+
+
         Start_Lopper_workinfo();
 
        // start();
@@ -141,17 +150,20 @@ public class MainActivity extends BaseActivity {
 
         task.enqueue(new Callback<Workerbean>() {
             @Override
-            public void onResponse(Call<Workerbean> call, Response<Workerbean> response) {
-                if (response.body() != null) {
+            public void onResponse(Call<Workerbean> call, @NonNull Response<Workerbean> response) {
+                if (response.body().getCode()==HttpURLConnection.HTTP_OK) {
                     updateWorkerInOut(response.body());
+                    Log.d(TAG_WORKINFO,"最后一名人员--->"+response.body().getData().get( response.body().getData().size()-1).getPersonname());
+
 
                 }
-              //  Log.d(TAG,"最后一名人员--->"+response.body().getData().get(response.body().getData().size()-1).getPersonname());
+
+
             }
 
             @Override
             public void onFailure(Call<Workerbean> call, Throwable t) {
-
+             Log.d(TAG_WORKINFO,"workinfo  workin&out error ---->"+t.toString());
             }
         });
     }
@@ -173,7 +185,7 @@ public class MainActivity extends BaseActivity {
         HeWeather.getWeatherNow(MainActivity.this, "zhenjiang", Lang.CHINESE_SIMPLIFIED, Unit.METRIC, new HeWeather.OnResultWeatherNowBeanListener() {
             @Override
             public void onError(Throwable throwable) {
-                Log.d(TAG, "weather  error: " + throwable.toString());
+                Log.d(TAG_WEATHER, "weather  error: " + throwable.toString());
 
             }
 
@@ -181,14 +193,14 @@ public class MainActivity extends BaseActivity {
             public void onSuccess(Now now) {
                 if (Code.OK.getCode().equalsIgnoreCase(now.getStatus())) {
                     //此时返回数据
-                    Log.d(TAG, "天气返回chengg");
+                    Log.d(TAG_WEATHER, "天气请求成功");
                     updateWeatherView(now);
 
                 } else {
                     //在此查看返回数据失败的原因
                     String status = now.getStatus();
                     Code code = Code.toEnum(status);
-                    Log.d(TAG, "failed code: " + code);
+                    Log.d(TAG_WEATHER, "failed code: " + code);
                 }
             }
         });
@@ -208,10 +220,10 @@ public class MainActivity extends BaseActivity {
                     @Override
                     public void run() {
                         mImgCond.setImageResource(drawable);
-                        Log.d(TAG, "111" + now1.getCond_txt());
+                       // Log.d(TAG, "111" + now1.getCond_txt());
                         mTvCond.setText(now1.getCond_txt());
                         mTvTmp.setText(now1.getTmp());
-                        Log.d(TAG, "111" + now1.getTmp());
+                      //  Log.d(TAG, "111" + now1.getTmp());
                         mTvWindDir.setText(now1.getWind_dir());
                         mWindSc.setText(now1.getWind_sc());
 
@@ -245,7 +257,7 @@ public class MainActivity extends BaseActivity {
 
             @Override
             public void onFailure(Call<CountBean> call, Throwable t) {
-                Log.d(TAG, "ERROR CODE -----> " + t.toString());
+                Log.d(TAG_WORKINFO, "get count ERROR CODE -----> " + t.toString());
             }
         });
 
@@ -288,12 +300,12 @@ private void getClassCount()
 
         @Override
         public void onFailure(Call<ClassCount> call, Throwable t) {
-            Log.d(TAG, "ERROR CODE -----> " + t.toString());
+            Log.d(TAG_WORKINFO, "get class count ERROR CODE -----> " + t.toString());
         }
     });
 }
 
-    private void updateClassCountView(ClassCount body) {
+    private void updateClassCountView(@NonNull  ClassCount body) {
         if (body.getCode() ==HttpURLConnection.HTTP_OK) {
             mClassCountAdapter.setData(body);
 
@@ -317,13 +329,16 @@ private void getClassCount()
             public void run() {
                 // 在这里做轮询的事情
                 // doSomeThing();
-                Log.d("111","lunxun");
+              //  Log.d("111","lunxun");
              //  getworkerinfo();
                 if (mWebSocketManager.isConnect()) {
 
                 }
-                else
+                else {
                     mWebSocketManager.reconnect();
+
+                }
+
                 // 60秒后下一次轮询开始
                 mHandler_workinfo.postDelayed(this, 1 * 1000);
             }
@@ -344,7 +359,7 @@ private void getClassCount()
             public void run() {
                 // 在这里做轮询的事情
                 // doSomeThing();
-                Log.d("111","lunxun");
+                Log.d(TAG_WEATHER,"weather 轮询");
                 // 60秒后下一次轮询开始
                 getWeather();
                 mHandler_weather.postDelayed(this, 60*60 * 1000);
